@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ArqField — Fichas Arqueológicas</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1C1C1E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ArqField">
+<style>
+:root {
+  --ios-bg:#F2F2F7;--ios-card:#FFFFFF;--ios-blue:#007AFF;--ios-green:#34C759;
+  --ios-red:#FF3B30;--ios-orange:#FF9500;--ios-gray:#8E8E93;--ios-gray3:#C7C7CC;
+  --ios-gray4:#D1D1D6;--ios-gray5:#E5E5EA;--ios-gray6:#F2F2F7;--ios-label:#000000;
+  --ios-sep:rgba(60,60,67,0.12);--ios-fill:rgba(120,120,128,0.12);
+  --font:-apple-system,'Helvetica Neue',sans-serif;--radius:12px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:var(--font);background:var(--ios-bg);color:var(--ios-label);min-height:100vh;overflow-x:hidden;padding-bottom:90px;}
+.screen{display:none;} .screen.active{display:block;}
+
+.status-bar{background:#1C1C1E;color:white;padding:14px 20px 8px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:200;}
+.status-time{font-size:17px;font-weight:700;letter-spacing:-0.4px;}
+.status-icons{display:flex;gap:6px;align-items:center;}
+
+.nav-bar{background:rgba(28,28,30,0.96);backdrop-filter:blur(20px);padding:12px 20px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid rgba(255,255,255,0.1);position:sticky;top:52px;z-index:199;}
+.nav-title{font-size:17px;font-weight:600;color:white;letter-spacing:-0.3px;}
+.nav-brand{font-size:13px;color:var(--ios-blue);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+.nav-action{background:var(--ios-blue);color:white;border:none;border-radius:20px;padding:7px 16px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.nav-back{background:none;border:none;color:var(--ios-blue);font-size:15px;font-weight:500;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:4px;padding:0;}
+.field-id{background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.25);border-radius:8px;padding:4px 10px;font-size:12px;color:rgba(255,255,255,0.9);font-weight:600;letter-spacing:0.5px;}
+
+.hero-card{margin:20px 16px 0;background:linear-gradient(135deg,#1C3A2A 0%,#2D6A4F 50%,#1B4332 100%);border-radius:20px;padding:24px 20px;position:relative;overflow:hidden;}
+.hero-card::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:rgba(255,255,255,0.04);border-radius:50%;}
+.hero-eyebrow{font-size:11px;color:rgba(255,255,255,0.6);font-weight:600;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;}
+.hero-title{font-size:26px;font-weight:700;color:white;letter-spacing:-0.5px;line-height:1.2;margin-bottom:8px;}
+.hero-sub{font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:20px;line-height:1.5;}
+.hero-meta{display:flex;gap:16px;}
+.hero-badge{background:rgba(255,255,255,0.12);border:0.5px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;font-size:12px;color:rgba(255,255,255,0.85);font-weight:500;}
+
+.gps-card{margin:16px 16px 0;background:var(--ios-card);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+.gps-header{background:#1C3A2A;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+.gps-title{font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.5px;text-transform:uppercase;}
+.gps-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ios-green);font-weight:600;}
+.gps-dot{width:8px;height:8px;background:var(--ios-gray3);border-radius:50%;transition:background 0.3s;}
+.gps-dot.active{background:var(--ios-green);animation:pulse-dot 1.5s infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.8);}}
+.gps-body{padding:16px;}
+.gps-coords{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.gps-coord-item{background:var(--ios-gray6);border-radius:var(--radius-sm);padding:10px 12px;}
+.gps-coord-label{font-size:11px;color:var(--ios-gray);font-weight:600;letter-spacing:0.3px;text-transform:uppercase;margin-bottom:4px;}
+.gps-coord-value{font-size:16px;font-weight:600;color:var(--ios-label);font-variant-numeric:tabular-nums;letter-spacing:-0.3px;}
+.gps-btn{width:100%;background:var(--ios-blue);color:white;border:none;border-radius:var(--radius-sm);padding:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:8px;}
+.gps-btn:active{opacity:0.8;}
+
+.section-header{padding:24px 16px 8px;font-size:13px;font-weight:600;color:var(--ios-gray);letter-spacing:0.5px;text-transform:uppercase;}
+
+.form-group{margin:0 16px;background:var(--ios-card);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.form-row{display:flex;align-items:center;padding:0 16px;min-height:52px;border-bottom:0.5px solid var(--ios-sep);gap:12px;}
+.form-row:last-child{border-bottom:none;}
+.form-label{font-size:15px;color:var(--ios-label);font-weight:400;flex-shrink:0;min-width:90px;}
+.form-label.req::after{content:' *';color:var(--ios-red);font-size:13px;}
+.form-input{flex:1;border:none;outline:none;font-size:15px;color:var(--ios-label);font-family:var(--font);background:transparent;text-align:right;padding:14px 0;}
+.form-input::placeholder{color:var(--ios-gray3);}
+.form-select{flex:1;border:none;outline:none;font-size:15px;color:var(--ios-label);font-family:var(--font);background:transparent;text-align:right;-webkit-appearance:none;cursor:pointer;}
+.form-textarea{width:100%;border:none;outline:none;font-size:15px;color:var(--ios-label);font-family:var(--font);background:transparent;resize:none;padding:14px 16px;line-height:1.5;min-height:90px;}
+.form-textarea::placeholder{color:var(--ios-gray3);}
+
+.check-group{margin:0 16px;background:var(--ios-card);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.check-row{display:flex;align-items:center;padding:14px 16px;border-bottom:0.5px solid var(--ios-sep);cursor:pointer;gap:12px;}
+.check-row:last-child{border-bottom:none;}
+.check-row:active{background:var(--ios-fill);}
+.check-row input[type=checkbox]{display:none;}
+.check-box{width:24px;height:24px;border-radius:50%;border:2px solid var(--ios-gray3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.check-row input[type=checkbox]:checked+.check-box{background:var(--ios-green);border-color:var(--ios-green);}
+.check-box::after{content:'';width:6px;height:10px;border:2px solid white;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);display:none;}
+.check-row input[type=checkbox]:checked+.check-box::after{display:block;}
+.check-label{font-size:15px;color:var(--ios-label);}
+
+.mat-table{margin:0 16px;background:var(--ios-card);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.mat-head{display:grid;grid-template-columns:2fr 70px 3fr;background:#1C3A2A;padding:10px 16px;gap:8px;}
+.mat-head-cell{font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:0.5px;text-transform:uppercase;}
+.mat-row{display:grid;grid-template-columns:2fr 70px 3fr;padding:4px 16px;gap:8px;border-bottom:0.5px solid var(--ios-sep);align-items:center;min-height:50px;}
+.mat-row:last-child{border-bottom:none;}
+.mat-type{font-size:14px;color:var(--ios-label);font-weight:500;}
+.mat-input{border:none;outline:none;font-size:14px;color:var(--ios-label);font-family:var(--font);background:var(--ios-fill);border-radius:6px;padding:6px 8px;text-align:center;width:100%;}
+.mat-input::placeholder{color:var(--ios-gray3);font-size:12px;}
+.mat-desc-input{border:none;outline:none;font-size:13px;color:var(--ios-label);font-family:var(--font);background:var(--ios-fill);border-radius:6px;padding:6px 8px;width:100%;}
+.mat-desc-input::placeholder{color:var(--ios-gray3);}
+
+.dim-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:12px 16px;}
+.dim-item{background:var(--ios-gray6);border-radius:var(--radius-sm);padding:10px 12px;}
+.dim-label{font-size:11px;color:var(--ios-gray);font-weight:600;letter-spacing:0.3px;text-transform:uppercase;margin-bottom:6px;}
+.dim-input{border:none;outline:none;font-size:18px;font-weight:600;color:var(--ios-label);font-family:var(--font);background:transparent;width:100%;font-variant-numeric:tabular-nums;}
+.dim-input::placeholder{color:var(--ios-gray3);font-size:16px;font-weight:400;}
+
+.photo-section{margin:0 16px;background:var(--ios-card);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.photo-add-btn{width:100%;background:none;border:none;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;border-bottom:0.5px solid var(--ios-sep);font-family:var(--font);}
+.photo-add-btn:active{background:var(--ios-fill);}
+.photo-icon-wrap{width:40px;height:40px;background:var(--ios-blue);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.photo-add-text{font-size:15px;color:var(--ios-blue);font-weight:500;text-align:left;}
+.photo-sub{font-size:13px;color:var(--ios-gray);font-weight:400;}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px 0;}
+.photo-thumb{aspect-ratio:1;background:var(--ios-gray5);position:relative;overflow:hidden;}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;}
+.photo-del{position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(0,0,0,0.6);border-radius:50%;border:none;color:white;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+#camera-input{display:none;}
+
+.seg-group{display:flex;gap:8px;flex-wrap:wrap;padding-bottom:14px;}
+.seg-btn{background:var(--ios-fill);border:1px solid transparent;border-radius:20px;padding:7px 14px;font-size:14px;color:var(--ios-label);cursor:pointer;font-family:var(--font);font-weight:500;transition:all 0.12s;}
+.seg-btn.active{background:var(--ios-blue);color:white;border-color:var(--ios-blue);}
+
+.emp-grid{display:grid;grid-template-columns:1fr 1fr;}
+.emp-row{display:flex;align-items:center;padding:14px 16px;cursor:pointer;gap:10px;border-bottom:0.5px solid var(--ios-sep);border-right:0.5px solid var(--ios-sep);}
+.emp-row:nth-child(even){border-right:none;}
+.emp-row:nth-last-child(-n+2){border-bottom:none;}
+.emp-row:active{background:var(--ios-fill);}
+.emp-row input[type=checkbox]{display:none;}
+.emp-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--ios-gray3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.12s;}
+.emp-row input[type=checkbox]:checked+.emp-dot{background:var(--ios-blue);border-color:var(--ios-blue);}
+.emp-dot::after{content:'';width:8px;height:8px;background:white;border-radius:50%;display:none;}
+.emp-row input[type=checkbox]:checked+.emp-dot::after{display:block;}
+.emp-text{font-size:14px;color:var(--ios-label);}
+
+.cons-options{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:16px;}
+.cons-opt{border:1.5px solid var(--ios-gray4);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;cursor:pointer;font-family:var(--font);background:none;font-size:13px;font-weight:600;color:var(--ios-gray);}
+.cons-opt.active-good{background:rgba(52,199,89,0.1);border-color:var(--ios-green);color:var(--ios-green);}
+.cons-opt.active-regular{background:rgba(255,149,0,0.1);border-color:var(--ios-orange);color:var(--ios-orange);}
+.cons-opt.active-bad{background:rgba(255,59,48,0.1);border-color:var(--ios-red);color:var(--ios-red);}
+
+.canvas-wrap{margin:0 16px;background:var(--ios-card);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.canvas-toolbar{display:flex;gap:8px;padding:10px 12px;border-bottom:0.5px solid var(--ios-sep);align-items:center;overflow-x:auto;}
+.canvas-tool{background:var(--ios-fill);border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--ios-label);cursor:pointer;white-space:nowrap;font-family:var(--font);}
+.canvas-tool.active{background:var(--ios-blue);color:white;}
+canvas#croquis{display:block;width:100%;cursor:crosshair;touch-action:none;}
+.color-dots{display:flex;gap:6px;align-items:center;}
+.color-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+.color-dot.selected{border-color:var(--ios-label);}
+
+.submit-btn{margin:24px 16px 0;width:calc(100% - 32px);background:var(--ios-green);color:white;border:none;border-radius:var(--radius);padding:18px;font-size:17px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:10px;}
+.submit-btn:active{opacity:0.85;transform:scale(0.99);}
+.secondary-btn{margin:12px 16px 0;width:calc(100% - 32px);background:none;color:var(--ios-blue);border:1.5px solid var(--ios-blue);border-radius:var(--radius);padding:16px;font-size:17px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:10px;}
+
+.toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(28,28,30,0.92);backdrop-filter:blur(20px);color:white;padding:12px 20px;border-radius:20px;font-size:14px;font-weight:600;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap;z-index:999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(248,248,248,0.95);backdrop-filter:blur(20px);border-top:0.5px solid var(--ios-gray4);display:flex;padding:8px 0 20px;z-index:100;}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px 0;}
+.tab-icon{font-size:22px;}
+.tab-label{font-size:10px;color:var(--ios-gray);font-weight:500;letter-spacing:0.2px;}
+.tab-item.active .tab-label{color:var(--ios-blue);}
+
+/* FICHAS LIST */
+.search-bar-wrap{padding:12px 16px;background:var(--ios-gray6);position:sticky;top:104px;z-index:50;}
+.search-bar{background:var(--ios-fill);border:none;border-radius:12px;padding:10px 16px 10px 40px;width:100%;font-size:15px;font-family:var(--font);color:var(--ios-label);outline:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center;}
+.search-bar::placeholder{color:var(--ios-gray3);}
+
+.fichas-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 16px 16px;}
+.stat-card{background:var(--ios-card);border-radius:var(--radius-sm);padding:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.stat-num{font-size:24px;font-weight:700;color:var(--ios-label);}
+.stat-label{font-size:11px;color:var(--ios-gray);font-weight:500;margin-top:2px;}
+
+.fichas-list{padding:0 16px;}
+.ficha-card{background:var(--ios-card);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);cursor:pointer;}
+.ficha-card:active{opacity:0.8;}
+.ficha-card-header{background:#1C3A2A;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;}
+.ficha-card-id{font-size:13px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.5px;}
+.ficha-card-date{font-size:12px;color:rgba(255,255,255,0.55);}
+.ficha-card-body{padding:12px 14px;}
+.ficha-card-sitio{font-size:16px;font-weight:600;color:var(--ios-label);margin-bottom:4px;}
+.ficha-card-proyecto{font-size:13px;color:var(--ios-gray);margin-bottom:8px;}
+.ficha-card-meta{display:flex;gap:8px;flex-wrap:wrap;}
+.ficha-badge{background:var(--ios-gray6);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--ios-gray);font-weight:500;}
+.ficha-badge.green{background:rgba(52,199,89,0.1);color:var(--ios-green);}
+.ficha-badge.blue{background:rgba(0,122,255,0.1);color:var(--ios-blue);}
+
+.empty-state{text-align:center;padding:60px 32px;color:var(--ios-gray);}
+.empty-icon{font-size:56px;margin-bottom:16px;opacity:0.5;}
+.empty-title{font-size:20px;font-weight:600;color:var(--ios-label);margin-bottom:8px;}
+.empty-sub{font-size:15px;line-height:1.5;}
+
+/* DETAIL */
+.detail-section{margin:16px 16px 0;background:var(--ios-card);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.detail-section-title{background:#1C3A2A;padding:10px 16px;font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:0.5px;text-transform:uppercase;}
+.detail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 16px;border-bottom:0.5px solid var(--ios-sep);gap:16px;}
+.detail-row:last-child{border-bottom:none;}
+.detail-key{font-size:14px;color:var(--ios-gray);flex-shrink:0;}
+.detail-val{font-size:14px;color:var(--ios-label);font-weight:500;text-align:right;word-break:break-word;}
+.detail-coords{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px;}
+.detail-coord-box{background:var(--ios-gray6);border-radius:var(--radius-sm);padding:10px;}
+.detail-coord-label{font-size:11px;color:var(--ios-gray);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;}
+.detail-coord-val{font-size:15px;font-weight:600;color:var(--ios-label);font-variant-numeric:tabular-nums;}
+.delete-btn{margin:16px 16px 0;width:calc(100% - 32px);background:none;color:var(--ios-red);border:1.5px solid var(--ios-red);border-radius:var(--radius);padding:16px;font-size:17px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:10px;}
+</style>
+</head>
+<body>
+
+<div class="status-bar">
+  <span class="status-time" id="clock">09:41</span>
+  <div class="status-icons">
+    <svg width="17" height="12" viewBox="0 0 17 12" fill="white"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.3"/><rect x="4.5" y="2" width="3" height="10" rx="1" opacity="0.5"/><rect x="9" y="1" width="3" height="11" rx="1" opacity="0.75"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="white"><path d="M8 2C10.7 2 13.1 3.1 14.8 4.9L16 3.7C13.9 1.4 11.1 0 8 0C4.9 0 2.1 1.4 0 3.7L1.2 4.9C2.9 3.1 5.3 2 8 2Z"/><path d="M8 5C9.8 5 11.4 5.7 12.6 6.9L13.8 5.7C12.2 4.1 10.2 3 8 3C5.8 3 3.8 4.1 2.2 5.7L3.4 6.9C4.6 5.7 6.2 5 8 5Z"/><circle cx="8" cy="10" r="2"/></svg>
+    <svg width="25" height="12" viewBox="0 0 25 12" fill="white"><rect x="0" y="1" width="22" height="10" rx="3" stroke="white" stroke-width="1" fill="none"/><rect x="22.5" y="3.5" width="2" height="5" rx="1" fill="white" opacity="0.4"/><rect x="1.5" y="2.5" width="17" height="7" rx="2" fill="white"/></svg>
+  </div>
+</div>
+
+<!-- ══ SCREEN 1: NUEVA FICHA ══ -->
+<div class="screen active" id="screen-nueva">
+  <div class="nav-bar">
+    <span class="nav-brand">ArqField</span>
+    <span class="nav-title">Nueva Ficha</span>
+    <div class="field-id" id="ficha-id">RS-001</div>
+  </div>
+
+  <div class="hero-card">
+    <div class="hero-eyebrow">Ficha Arqueológica</div>
+    <div class="hero-title">Recolección Superficial</div>
+    <div class="hero-sub">Complete todos los campos. Los marcados con * son obligatorios.</div>
+    <div class="hero-meta">
+      <div class="hero-badge" id="hero-date">— fecha —</div>
+      <div class="hero-badge" id="hero-time">— hora —</div>
+    </div>
+  </div>
+
+  <div class="section-header">Ubicación GPS</div>
+  <div class="gps-card">
+    <div class="gps-header">
+      <span class="gps-title">Coordenadas</span>
+      <span class="gps-status"><span class="gps-dot" id="gps-dot"></span><span id="gps-status-txt">Sin señal</span></span>
+    </div>
+    <div class="gps-body">
+      <div class="gps-coords">
+        <div class="gps-coord-item"><div class="gps-coord-label">Latitud</div><div class="gps-coord-value" id="coord-lat">—</div></div>
+        <div class="gps-coord-item"><div class="gps-coord-label">Longitud</div><div class="gps-coord-value" id="coord-lng">—</div></div>
+        <div class="gps-coord-item"><div class="gps-coord-label">Altitud (m)</div><div class="gps-coord-value" id="coord-alt">—</div></div>
+        <div class="gps-coord-item"><div class="gps-coord-label">Precisión (m)</div><div class="gps-coord-value" id="coord-acc">—</div></div>
+      </div>
+      <button class="gps-btn" onclick="getLocation()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        Obtener Coordenadas
+      </button>
+    </div>
+  </div>
+
+  <div class="section-header">Identificación</div>
+  <div class="form-group">
+    <div class="form-row"><label class="form-label req">Proyecto</label><input class="form-input" type="text" placeholder="Nombre del proyecto" id="inp-proyecto"></div>
+    <div class="form-row"><label class="form-label req">Sitio/Hallazgo</label><input class="form-input" type="text" placeholder="Nombre" id="inp-sitio"></div>
+    <div class="form-row"><label class="form-label">Unidad</label><input class="form-input" type="text" placeholder="Nombre de la unidad" id="inp-unidad"></div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Localización</div>
+  <div class="form-group">
+    <div class="form-row">
+      <label class="form-label req">Región</label>
+      <select class="form-select" id="inp-region">
+        <option value="">Seleccionar</option>
+        <option>Arica y Parinacota</option><option>Tarapacá</option><option>Antofagasta</option>
+        <option>Atacama</option><option>Coquimbo</option><option>Valparaíso</option>
+        <option>Metropolitana</option><option>O'Higgins</option><option>Maule</option>
+        <option>Ñuble</option><option>Biobío</option><option>La Araucanía</option>
+        <option>Los Ríos</option><option>Los Lagos</option><option>Aysén</option><option>Magallanes</option>
+      </select>
+    </div>
+    <div class="form-row"><label class="form-label">Provincia</label><input class="form-input" type="text" placeholder="Provincia" id="inp-provincia"></div>
+    <div class="form-row"><label class="form-label">Comuna</label><input class="form-input" type="text" placeholder="Comuna" id="inp-comuna"></div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Tipo de Sitio</div>
+  <div class="form-group">
+    <div class="form-row"><label class="form-label">Tipo</label><input class="form-input" type="text" placeholder="Descripción" id="inp-tipo"></div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px;margin-bottom:6px">Tipología Funcional</div>
+  <div class="check-group">
+    <label class="check-row"><input type="checkbox" id="tf-domestico"><div class="check-box"></div><div class="check-label">Doméstico/habitacional</div></label>
+    <label class="check-row"><input type="checkbox" id="tf-productivo"><div class="check-box"></div><div class="check-label">Productivo</div></label>
+    <label class="check-row"><input type="checkbox" id="tf-transito"><div class="check-box"></div><div class="check-label">Tránsito</div></label>
+    <label class="check-row"><input type="checkbox" id="tf-ritual"><div class="check-box"></div><div class="check-label">Ritual</div></label>
+    <label class="check-row"><input type="checkbox" id="tf-entierro"><div class="check-box"></div><div class="check-label">Entierro</div></label>
+    <label class="check-row"><input type="checkbox" id="tf-indeterminado"><div class="check-box"></div><div class="check-label">Indeterminado</div></label>
+    <label class="check-row"><input type="checkbox" id="tf-otro"><div class="check-box"></div><div class="check-label">Otro</div></label>
+  </div>
+
+  <div class="section-header" style="padding-top:16px;margin-bottom:6px">Período</div>
+  <div class="check-group">
+    <label class="check-row"><input type="checkbox" id="per-prehispanico"><div class="check-box"></div><div class="check-label">Prehispánico</div></label>
+    <div class="form-row" style="padding-left:52px"><label class="form-label" style="font-size:14px;min-width:110px;color:var(--ios-gray)">Período específico</label><input class="form-input" type="text" placeholder="ej: Formativo…" id="per-especifico" style="font-size:14px"></div>
+    <label class="check-row"><input type="checkbox" id="per-historico"><div class="check-box"></div><div class="check-label">Histórico</div></label>
+    <label class="check-row"><input type="checkbox" id="per-indet"><div class="check-box"></div><div class="check-label">Indeterminado</div></label>
+    <label class="check-row"><input type="checkbox" id="per-otro"><div class="check-box"></div><div class="check-label">Otro</div></label>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Recolección Superficial</div>
+  <div class="form-group">
+    <div class="form-row" style="flex-direction:column;align-items:flex-start;padding-top:14px;gap:10px">
+      <label class="form-label">Tipo de recolección</label>
+      <div class="seg-group" id="tipo-recol">
+        <button class="seg-btn" onclick="selectSeg(this,'tipo-recol')">Superficial</button>
+        <button class="seg-btn" onclick="selectSeg(this,'tipo-recol')">Decapado (5cm)</button>
+        <button class="seg-btn" onclick="selectSeg(this,'tipo-recol')">Barrido</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Dimensiones de la Unidad</div>
+  <div class="form-group">
+    <div class="dim-row">
+      <div class="dim-item"><div class="dim-label">Largo (m)</div><input class="dim-input" type="number" placeholder="0" step="0.01" id="dim-largo" oninput="calcArea()"></div>
+      <div class="dim-item"><div class="dim-label">Ancho (m)</div><input class="dim-input" type="number" placeholder="0" step="0.01" id="dim-ancho" oninput="calcArea()"></div>
+      <div class="dim-item" style="background:rgba(0,122,255,0.08);border:1px solid rgba(0,122,255,0.2)"><div class="dim-label" style="color:var(--ios-blue)">Área (m²)</div><div class="dim-input" id="dim-area" style="color:var(--ios-blue);font-weight:700">—</div></div>
+    </div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Material Arqueológico Recolectado</div>
+  <div class="mat-table">
+    <div class="mat-head"><div class="mat-head-cell">Tipología</div><div class="mat-head-cell">Cant.</div><div class="mat-head-cell">Descripción</div></div>
+    <div id="mat-body"></div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Materiales Diagnósticos</div>
+  <div class="form-group"><textarea class="form-textarea" id="desc-diag" placeholder="Descripción detallada de materiales diagnósticos…"></textarea></div>
+
+  <div class="section-header" style="padding-top:16px">Emplazamiento</div>
+  <div class="mat-table">
+    <div class="emp-grid">
+      <label class="emp-row"><input type="checkbox" id="emp-llanura"><div class="emp-dot"></div><span class="emp-text">Llanura</span></label>
+      <label class="emp-row"><input type="checkbox" id="emp-lomaje"><div class="emp-dot"></div><span class="emp-text">Lomaje</span></label>
+      <label class="emp-row"><input type="checkbox" id="emp-ladera"><div class="emp-dot"></div><span class="emp-text">Ladera</span></label>
+      <label class="emp-row"><input type="checkbox" id="emp-quebrada"><div class="emp-dot"></div><span class="emp-text">Quebrada</span></label>
+      <label class="emp-row"><input type="checkbox" id="emp-cerro"><div class="emp-dot"></div><span class="emp-text">Cerro</span></label>
+      <label class="emp-row"><input type="checkbox" id="emp-terraza"><div class="emp-dot"></div><span class="emp-text">Terraza fluvial</span></label>
+    </div>
+    <div class="form-row" style="border-top:0.5px solid var(--ios-sep)">
+      <label class="form-label" style="font-size:14px">Otro</label>
+      <input class="form-input" type="text" placeholder="Especificar" id="emp-otro" style="font-size:14px">
+    </div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Estado de Conservación</div>
+  <div class="form-group">
+    <div class="cons-options">
+      <button class="cons-opt" onclick="selectCons(this,'good')">✓ Bueno</button>
+      <button class="cons-opt" onclick="selectCons(this,'regular')">~ Regular</button>
+      <button class="cons-opt" onclick="selectCons(this,'bad')">✗ Malo</button>
+    </div>
+    <div style="border-top:0.5px solid var(--ios-sep)"><textarea class="form-textarea" id="desc-cons" placeholder="Descripción del estado de conservación…"></textarea></div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Responsables</div>
+  <div class="form-group">
+    <div class="form-row"><label class="form-label req">Responsable</label><input class="form-input" type="text" placeholder="Nombre" id="inp-resp"></div>
+    <div class="form-row"><label class="form-label">Ayudante/s</label><input class="form-input" type="text" placeholder="Nombres" id="inp-ayud"></div>
+    <div class="form-row"><label class="form-label">Fecha</label><input class="form-input" type="date" id="inp-fecha" style="text-align:right"></div>
+    <div class="form-row"><label class="form-label">Campaña</label><input class="form-input" type="text" placeholder="Nombre campaña" id="inp-campania"></div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Fotografías</div>
+  <div class="photo-section">
+    <button class="photo-add-btn" onclick="document.getElementById('camera-input').click()">
+      <div class="photo-icon-wrap">
+        <svg width="22" height="18" viewBox="0 0 22 20" fill="white"><path d="M11 13.5C12.933 13.5 14.5 11.933 14.5 10C14.5 8.067 12.933 6.5 11 6.5C9.067 6.5 7.5 8.067 7.5 10C7.5 11.933 9.067 13.5 11 13.5Z"/><path d="M20 4H16.83L15 2H7L5.17 4H2C0.9 4 0 4.9 0 6V18C0 19.1 0.9 20 2 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM11 16C8.24 16 6 13.76 6 11C6 8.24 8.24 6 11 6C13.76 6 16 8.24 16 11C16 13.76 13.76 16 11 16Z" opacity="0.7"/></svg>
+      </div>
+      <div><div class="photo-add-text">Agregar Fotografía</div><div class="photo-sub">Cámara o biblioteca de fotos</div></div>
+    </button>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" multiple onchange="handlePhotos(event)">
+    <div class="photo-grid" id="photo-grid"></div>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Croquis de Dispersión</div>
+  <div class="canvas-wrap">
+    <div class="canvas-toolbar">
+      <button class="canvas-tool active" onclick="setTool('draw',this)">✏️ Dibujar</button>
+      <button class="canvas-tool" onclick="setTool('point',this)">📍 Punto</button>
+      <button class="canvas-tool" onclick="setTool('line',this)">╱ Línea</button>
+      <button class="canvas-tool" onclick="setTool('erase',this)">⌫ Borrar</button>
+      <div class="color-dots">
+        <div class="color-dot selected" style="background:#000" onclick="setColor('#000',this)"></div>
+        <div class="color-dot" style="background:#FF3B30" onclick="setColor('#FF3B30',this)"></div>
+        <div class="color-dot" style="background:#007AFF" onclick="setColor('#007AFF',this)"></div>
+        <div class="color-dot" style="background:#34C759" onclick="setColor('#34C759',this)"></div>
+      </div>
+      <button class="canvas-tool" onclick="clearCanvas()" style="margin-left:auto;color:var(--ios-red)">Limpiar</button>
+    </div>
+    <canvas id="croquis" height="280"></canvas>
+  </div>
+
+  <div class="section-header" style="padding-top:16px">Observaciones Adicionales</div>
+  <div class="form-group"><textarea class="form-textarea" id="obs-adicionales" placeholder="Observaciones generales, contexto ambiental, notas relevantes…" style="min-height:110px"></textarea></div>
+
+  <button class="submit-btn" onclick="guardarFicha()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    Guardar Ficha
+  </button>
+  <button class="secondary-btn" onclick="exportarTxt()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Exportar como TXT
+  </button>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ══ SCREEN 2: FICHAS GUARDADAS ══ -->
+<div class="screen" id="screen-fichas">
+  <div class="nav-bar">
+    <span class="nav-brand">ArqField</span>
+    <span class="nav-title">Mis Fichas</span>
+    <button class="nav-action" onclick="goTo('nueva')">+ Nueva</button>
+  </div>
+  <div class="search-bar-wrap">
+    <input class="search-bar" type="search" placeholder="Buscar por sitio, proyecto, ID o responsable…" id="search-input" oninput="renderFichasList()">
+  </div>
+  <div style="padding:16px 16px 8px"><div class="fichas-stats" id="fichas-stats"></div></div>
+  <div class="fichas-list" id="fichas-list"></div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ══ SCREEN 3: DETALLE ══ -->
+<div class="screen" id="screen-detalle">
+  <div class="nav-bar">
+    <button class="nav-back" onclick="goTo('fichas')">‹ Fichas</button>
+    <span class="nav-title" id="detail-nav-title">Detalle</span>
+    <button class="nav-action" onclick="exportDetalleTxt()" style="font-size:13px">Exportar</button>
+  </div>
+  <div id="detail-content"></div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <div class="tab-item active" id="tab-nueva" onclick="goTo('nueva')"><span class="tab-icon">📋</span><span class="tab-label" id="tl-nueva">Nueva Ficha</span></div>
+  <div class="tab-item" id="tab-fichas" onclick="goTo('fichas')"><span class="tab-icon">🗂</span><span class="tab-label">Fichas</span></div>
+  <div class="tab-item" onclick="showToast('🗺 Mapa — próximamente')"><span class="tab-icon">🗺</span><span class="tab-label">Mapa</span></div>
+  <div class="tab-item" onclick="showToast('⚙️ Config — próximamente')"><span class="tab-icon">⚙️</span><span class="tab-label">Config</span></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'arqfield_fichas_v2';
+function loadFichas(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[];}catch{return[];}}
+function saveFichas(arr){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));return true;}
+  catch(e){if(e.name==='QuotaExceededError')showToast('⚠️ Almacenamiento lleno. Exporta fichas antiguas.');return false;}
+}
+
+let currentDetailId=null;
+function goTo(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+screen).classList.add('active');
+  const tab=document.getElementById('tab-'+screen);if(tab)tab.classList.add('active');
+  window.scrollTo(0,0);
+  if(screen==='fichas')renderFichasList();
+}
+
+function updateClock(){
+  const now=new Date(),h=String(now.getHours()).padStart(2,'0'),m=String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent=h+':'+m;
+  const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],months=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  document.getElementById('hero-date').textContent=days[now.getDay()]+' '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
+  document.getElementById('hero-time').textContent=h+':'+m+' hrs';
+}
+updateClock();setInterval(updateClock,30000);
+document.getElementById('inp-fecha').value=new Date().toISOString().split('T')[0];
+
+function nextId(){
+  const all=loadFichas(),nums=all.map(f=>parseInt((f.id||'RS-000').replace('RS-',''))||0);
+  return 'RS-'+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');
+}
+document.getElementById('ficha-id').textContent=nextId();
+
+let coordData={};
+function getLocation(){
+  const dot=document.getElementById('gps-dot'),txt=document.getElementById('gps-status-txt');
+  txt.textContent='Buscando…';dot.className='gps-dot';dot.style.background='#FF9500';
+  if(!navigator.geolocation){showToast('GPS no disponible');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const{latitude:lat,longitude:lng,altitude:alt,accuracy:acc}=pos.coords;
+    document.getElementById('coord-lat').textContent=lat.toFixed(6);
+    document.getElementById('coord-lng').textContent=lng.toFixed(6);
+    document.getElementById('coord-alt').textContent=alt?alt.toFixed(1):'N/D';
+    document.getElementById('coord-acc').textContent=acc?'±'+acc.toFixed(0):'—';
+    dot.className='gps-dot active';dot.style.background='';txt.textContent='Señal activa';
+    coordData={lat:lat.toFixed(6),lng:lng.toFixed(6),alt:alt?alt.toFixed(1):null,acc:acc?acc.toFixed(0):null};
+    showToast('✓ Coordenadas capturadas');
+  },()=>{dot.style.background='var(--ios-red)';txt.textContent='Error GPS';showToast('No se pudo obtener ubicación');},{enableHighAccuracy:true,timeout:15000});
+}
+
+const MATERIALES=['Cerámica','Lítico','Osteofauna','Loza','Porcelana','Gres','Vidrio','Metal','Malacológico','Textil','Cuero'];
+(function(){
+  const body=document.getElementById('mat-body');
+  MATERIALES.forEach((m,i)=>{
+    const r=document.createElement('div');r.className='mat-row';
+    r.innerHTML=`<div class="mat-type">${m}</div><input class="mat-input" type="number" min="0" placeholder="0" id="mat-qty-${i}"><input class="mat-desc-input" type="text" placeholder="Descripción…" id="mat-desc-${i}">`;
+    body.appendChild(r);
+  });
+  for(let i=0;i<3;i++){
+    const idx=MATERIALES.length+i,r=document.createElement('div');r.className='mat-row';
+    r.innerHTML=`<input class="mat-desc-input" type="text" placeholder="Otro material…" id="mat-tipo-${idx}" style="font-size:14px;font-weight:500"><input class="mat-input" type="number" min="0" placeholder="0" id="mat-qty-${idx}"><input class="mat-desc-input" type="text" placeholder="Descripción…" id="mat-desc-${idx}">`;
+    body.appendChild(r);
+  }
+})();
+
+function calcArea(){
+  const l=parseFloat(document.getElementById('dim-largo').value)||0,a=parseFloat(document.getElementById('dim-ancho').value)||0;
+  document.getElementById('dim-area').textContent=(l&&a)?(l*a).toFixed(2):'—';
+}
+function selectSeg(el,group){document.querySelectorAll('#'+group+' .seg-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
+let consState='';
+function selectCons(el,state){document.querySelectorAll('.cons-opt').forEach(b=>b.className='cons-opt');el.classList.add('active-'+state);consState=state;}
+
+let photos=[];
+function handlePhotos(e){
+  Array.from(e.target.files).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=800;let w=img.width,h=img.height;
+        if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+        const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        photos.push(cv.toDataURL('image/jpeg',0.75));renderPhotos();
+      };img.src=ev.target.result;
+    };reader.readAsDataURL(file);
+  });e.target.value='';
+}
+function renderPhotos(){
+  const grid=document.getElementById('photo-grid');grid.innerHTML='';
+  photos.forEach((src,i)=>{const t=document.createElement('div');t.className='photo-thumb';t.innerHTML=`<img src="${src}"><button class="photo-del" onclick="removePhoto(${i})">✕</button>`;grid.appendChild(t);});
+}
+function removePhoto(i){photos.splice(i,1);renderPhotos();}
+
+const canvas=document.getElementById('croquis'),ctx=canvas.getContext('2d');
+let drawing=false,currentTool='draw',currentColor='#000',lineStart=null;
+function resizeCanvas(){canvas.width=canvas.parentElement.clientWidth;}
+resizeCanvas();window.addEventListener('resize',resizeCanvas);
+ctx.lineCap='round';ctx.lineJoin='round';
+function getPos(e){const rect=canvas.getBoundingClientRect(),touch=e.touches?e.touches[0]:e;return{x:(touch.clientX-rect.left)*(canvas.width/rect.width),y:(touch.clientY-rect.top)*(canvas.height/rect.height)};}
+canvas.addEventListener('mousedown',sd);canvas.addEventListener('mousemove',dr);canvas.addEventListener('mouseup',ed);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();sd(e);},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();dr(e);},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();ed(e);},{passive:false});
+function sd(e){drawing=true;const pos=getPos(e);
+  if(currentTool==='draw'||currentTool==='erase'){ctx.beginPath();ctx.moveTo(pos.x,pos.y);}
+  else if(currentTool==='point'){ctx.fillStyle=currentColor;ctx.beginPath();ctx.arc(pos.x,pos.y,5,0,Math.PI*2);ctx.fill();ctx.strokeStyle=currentColor;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(pos.x-8,pos.y-8);ctx.lineTo(pos.x+8,pos.y+8);ctx.moveTo(pos.x+8,pos.y-8);ctx.lineTo(pos.x-8,pos.y+8);ctx.stroke();ctx.lineWidth=2.5;drawing=false;}
+  else if(currentTool==='line'){lineStart=pos;}}
+function dr(e){if(!drawing)return;const pos=getPos(e);
+  if(currentTool==='draw'){ctx.strokeStyle=currentColor;ctx.lineWidth=2.5;ctx.lineTo(pos.x,pos.y);ctx.stroke();}
+  else if(currentTool==='erase'){ctx.clearRect(pos.x-15,pos.y-15,30,30);}}
+function ed(e){if(!drawing)return;
+  if(currentTool==='line'&&lineStart){const pos=getPos(e);ctx.strokeStyle=currentColor;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(lineStart.x,lineStart.y);ctx.lineTo(pos.x,pos.y);ctx.stroke();ctx.lineWidth=2.5;lineStart=null;}
+  drawing=false;}
+function setTool(t,el){currentTool=t;document.querySelectorAll('.canvas-tool').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
+function setColor(c,el){currentColor=c;document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected'));el.classList.add('selected');}
+function clearCanvas(){ctx.clearRect(0,0,canvas.width,canvas.height);}
+
+function collectFormData(){
+  const tipFun=[];['domestico','productivo','transito','ritual','entierro','indeterminado','otro'].forEach(t=>{if(document.getElementById('tf-'+t).checked)tipFun.push(t);});
+  const periodos=[];if(document.getElementById('per-prehispanico').checked)periodos.push('Prehispánico');if(document.getElementById('per-historico').checked)periodos.push('Histórico');if(document.getElementById('per-indet').checked)periodos.push('Indeterminado');if(document.getElementById('per-otro').checked)periodos.push('Otro');
+  const emplaz=[];['llanura','lomaje','ladera','quebrada','cerro','terraza'].forEach(e=>{if(document.getElementById('emp-'+e).checked)emplaz.push(e);});
+  const tipoRecol=document.querySelector('#tipo-recol .seg-btn.active');
+  const material=[];
+  MATERIALES.forEach((m,i)=>{const qty=document.getElementById('mat-qty-'+i).value,desc=document.getElementById('mat-desc-'+i).value;if(qty||desc)material.push({tipo:m,cantidad:qty||'0',descripcion:desc});});
+  for(let i=0;i<3;i++){const idx=MATERIALES.length+i,tipo=document.getElementById('mat-tipo-'+idx)?.value,qty=document.getElementById('mat-qty-'+idx)?.value,desc=document.getElementById('mat-desc-'+idx)?.value;if(tipo||qty)material.push({tipo:tipo||'Otro',cantidad:qty||'0',descripcion:desc||''});}
+  return{
+    id:document.getElementById('ficha-id').textContent,
+    proyecto:document.getElementById('inp-proyecto').value.trim(),
+    sitio:document.getElementById('inp-sitio').value.trim(),
+    unidad:document.getElementById('inp-unidad').value.trim(),
+    region:document.getElementById('inp-region').value,
+    provincia:document.getElementById('inp-provincia').value.trim(),
+    comuna:document.getElementById('inp-comuna').value.trim(),
+    tipo:document.getElementById('inp-tipo').value.trim(),
+    tipologiaFuncional:tipFun,periodos,
+    periodoEspecifico:document.getElementById('per-especifico').value.trim(),
+    tipoRecoleccion:tipoRecol?tipoRecol.textContent:'',
+    dimensiones:{largo:document.getElementById('dim-largo').value||'',ancho:document.getElementById('dim-ancho').value||'',area:document.getElementById('dim-area').textContent},
+    material,
+    descripcionDiagnosticos:document.getElementById('desc-diag').value.trim(),
+    emplazamiento:emplaz,emplazamientoOtro:document.getElementById('emp-otro').value.trim(),
+    conservacion:consState,descripcionConservacion:document.getElementById('desc-cons').value.trim(),
+    responsable:document.getElementById('inp-resp').value.trim(),
+    ayudantes:document.getElementById('inp-ayud').value.trim(),
+    fecha:document.getElementById('inp-fecha').value,
+    campania:document.getElementById('inp-campania').value.trim(),
+    coordenadas:coordData,
+    observaciones:document.getElementById('obs-adicionales').value.trim(),
+    fotos:photos,
+    croquis:canvas.toDataURL('image/png'),
+    timestamp:new Date().toISOString()
+  };
+}
+
+function guardarFicha(){
+  const data=collectFormData();
+  if(!data.proyecto||!data.sitio||!data.responsable){showToast('⚠️ Complete los campos obligatorios (*)');return;}
+  const fichas=loadFichas();fichas.push(data);
+  if(!saveFichas(fichas))return;
+  showToast('✅ Ficha '+data.id+' guardada en este dispositivo');
+  setTimeout(()=>{resetForm();goTo('fichas');},1200);
+}
+
+function resetForm(){
+  ['inp-proyecto','inp-sitio','inp-unidad','inp-provincia','inp-comuna','inp-tipo','per-especifico','emp-otro','desc-diag','desc-cons','inp-resp','inp-ayud','inp-campania','obs-adicionales'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('inp-region').value='';
+  document.getElementById('inp-fecha').value=new Date().toISOString().split('T')[0];
+  document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
+  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.cons-opt').forEach(b=>b.className='cons-opt');
+  consState='';
+  document.querySelectorAll('.mat-input,.mat-desc-input').forEach(i=>i.value='');
+  ['dim-largo','dim-ancho'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('dim-area').textContent='—';
+  photos=[];renderPhotos();clearCanvas();coordData={};
+  ['coord-lat','coord-lng','coord-alt','coord-acc'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('gps-dot').className='gps-dot';
+  document.getElementById('gps-status-txt').textContent='Sin señal';
+  document.getElementById('ficha-id').textContent=nextId();
+}
+
+function renderFichasList(){
+  const fichas=loadFichas(),q=(document.getElementById('search-input').value||'').toLowerCase();
+  const filtered=fichas.filter(f=>(f.sitio||'').toLowerCase().includes(q)||(f.proyecto||'').toLowerCase().includes(q)||(f.id||'').toLowerCase().includes(q)||(f.responsable||'').toLowerCase().includes(q)).reverse();
+  const totalMat=fichas.reduce((s,f)=>s+(f.material||[]).reduce((ss,m)=>ss+(parseInt(m.cantidad)||0),0),0);
+  document.getElementById('fichas-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${fichas.length}</div><div class="stat-label">Fichas</div></div>
+    <div class="stat-card"><div class="stat-num">${totalMat}</div><div class="stat-label">Piezas</div></div>
+    <div class="stat-card"><div class="stat-num">${fichas.filter(f=>f.coordenadas&&f.coordenadas.lat).length}</div><div class="stat-label">Con GPS</div></div>`;
+  const list=document.getElementById('fichas-list');
+  if(!filtered.length){list.innerHTML=`<div class="empty-state"><div class="empty-icon">🏺</div><div class="empty-title">${fichas.length===0?'Sin fichas aún':'Sin resultados'}</div><div class="empty-sub">${fichas.length===0?'Crea tu primera ficha usando el botón + Nueva.':'Prueba con otro término.'}</div></div>`;return;}
+  list.innerHTML=filtered.map(f=>{
+    const fecha=f.fecha?new Date(f.fecha+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'}):'—';
+    const totalPiezas=(f.material||[]).reduce((s,m)=>s+(parseInt(m.cantidad)||0),0);
+    return`<div class="ficha-card" onclick="verDetalle('${f.id}')">
+      <div class="ficha-card-header"><span class="ficha-card-id">${f.id}</span><span class="ficha-card-date">${fecha}</span></div>
+      <div class="ficha-card-body">
+        <div class="ficha-card-sitio">${f.sitio||'Sin nombre'}</div>
+        <div class="ficha-card-proyecto">${f.proyecto||'—'} · ${f.responsable||'—'}</div>
+        <div class="ficha-card-meta">
+          ${f.coordenadas&&f.coordenadas.lat?'<span class="ficha-badge green">📍 GPS</span>':''}
+          ${f.fotos&&f.fotos.length?`<span class="ficha-badge blue">📷 ${f.fotos.length} foto${f.fotos.length>1?'s':''}</span>`:''}
+          ${totalPiezas?`<span class="ficha-badge">🏺 ${totalPiezas} piezas</span>`:''}
+          ${f.region?`<span class="ficha-badge">${f.region}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function verDetalle(id){
+  const f=loadFichas().find(x=>x.id===id);if(!f)return;
+  currentDetailId=id;
+  document.getElementById('detail-nav-title').textContent=f.id;
+  const cons={good:'✓ Bueno',regular:'~ Regular',bad:'✗ Malo','':'—'};
+  const totalPiezas=(f.material||[]).reduce((s,m)=>s+(parseInt(m.cantidad)||0),0);
+  const fecha=f.fecha?new Date(f.fecha+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—';
+  const matRows=(f.material||[]).map(m=>`<div class="detail-row"><span class="detail-key">${m.tipo}</span><span class="detail-val">${m.cantidad} — ${m.descripcion||'—'}</span></div>`).join('')||'<div class="detail-row"><span class="detail-key" style="color:var(--ios-gray3)">Sin material registrado</span></div>';
+  const coordHtml=f.coordenadas&&f.coordenadas.lat?`<div class="detail-coords"><div class="detail-coord-box"><div class="detail-coord-label">Latitud</div><div class="detail-coord-val">${f.coordenadas.lat}</div></div><div class="detail-coord-box"><div class="detail-coord-label">Longitud</div><div class="detail-coord-val">${f.coordenadas.lng}</div></div>${f.coordenadas.alt?`<div class="detail-coord-box"><div class="detail-coord-label">Altitud</div><div class="detail-coord-val">${f.coordenadas.alt} m</div></div>`:''} ${f.coordenadas.acc?`<div class="detail-coord-box"><div class="detail-coord-label">Precisión</div><div class="detail-coord-val">±${f.coordenadas.acc} m</div></div>`:''}</div>`:'<div class="detail-row"><span class="detail-key" style="color:var(--ios-gray3)">Sin coordenadas registradas</span></div>';
+  const fotosHtml=f.fotos&&f.fotos.length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px 0">${f.fotos.map(src=>`<div style="aspect-ratio:1;overflow:hidden"><img src="${src}" style="width:100%;height:100%;object-fit:cover"></div>`).join('')}</div>`:'<div class="detail-row"><span class="detail-key" style="color:var(--ios-gray3)">Sin fotografías</span></div>';
+  document.getElementById('detail-content').innerHTML=`
+    <div class="detail-section"><div class="detail-section-title">Identificación</div>
+      <div class="detail-row"><span class="detail-key">Proyecto</span><span class="detail-val">${f.proyecto||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Sitio/Hallazgo</span><span class="detail-val">${f.sitio||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Unidad</span><span class="detail-val">${f.unidad||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Fecha</span><span class="detail-val">${fecha}</span></div>
+      <div class="detail-row"><span class="detail-key">Campaña</span><span class="detail-val">${f.campania||'—'}</span></div>
+    </div>
+    <div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Localización</div>
+      <div class="detail-row"><span class="detail-key">Región</span><span class="detail-val">${f.region||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Provincia</span><span class="detail-val">${f.provincia||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Comuna</span><span class="detail-val">${f.comuna||'—'}</span></div>
+    </div>
+    <div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Coordenadas GPS</div>${coordHtml}</div>
+    <div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Características</div>
+      <div class="detail-row"><span class="detail-key">Tipo sitio</span><span class="detail-val">${f.tipo||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Tip. funcional</span><span class="detail-val">${(f.tipologiaFuncional||[]).join(', ')||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Período</span><span class="detail-val">${(f.periodos||[]).join(', ')||'—'}${f.periodoEspecifico?' ('+f.periodoEspecifico+')':''}</span></div>
+      <div class="detail-row"><span class="detail-key">Tipo recolec.</span><span class="detail-val">${f.tipoRecoleccion||'—'}</span></div>
+    </div>
+    <div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Dimensiones · ${totalPiezas} piezas en total</div>
+      <div class="detail-row"><span class="detail-key">Largo</span><span class="detail-val">${f.dimensiones?.largo||'—'} m</span></div>
+      <div class="detail-row"><span class="detail-key">Ancho</span><span class="detail-val">${f.dimensiones?.ancho||'—'} m</span></div>
+      <div class="detail-row"><span class="detail-key">Área</span><span class="detail-val">${f.dimensiones?.area||'—'} m²</span></div>
+    </div>
+    <div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Material Arqueológico</div>${matRows}</div>
+    ${f.descripcionDiagnosticos?`<div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Materiales Diagnósticos</div><div class="detail-row"><span class="detail-val" style="text-align:left;line-height:1.6">${f.descripcionDiagnosticos}</span></div></div>`:''}
+    <div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Emplazamiento y Conservación</div>
+      <div class="detail-row"><span class="detail-key">Emplazamiento</span><span class="detail-val">${(f.emplazamiento||[]).join(', ')||'—'}${f.emplazamientoOtro?' / '+f.emplazamientoOtro:''}</span></div>
+      <div class="detail-row"><span class="detail-key">Conservación</span><span class="detail-val">${cons[f.conservacion]||'—'}</span></div>
+      ${f.descripcionConservacion?`<div class="detail-row"><span class="detail-key">Descripción</span><span class="detail-val">${f.descripcionConservacion}</span></div>`:''}
+    </div>
+    <div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Responsables</div>
+      <div class="detail-row"><span class="detail-key">Responsable</span><span class="detail-val">${f.responsable||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Ayudantes</span><span class="detail-val">${f.ayudantes||'—'}</span></div>
+    </div>
+    <div class="detail-section" style="margin-top:12px"><div class="detail-section-title">Fotografías</div>${fotosHtml}</div>
+    <button class="delete-btn" style="margin-bottom:8px" onclick="eliminarFicha('${f.id}')">🗑 Eliminar esta ficha</button>`;
+  goTo('detalle');
+}
+
+function eliminarFicha(id){
+  if(!confirm('¿Eliminar la ficha '+id+'? Esta acción no se puede deshacer.'))return;
+  saveFichas(loadFichas().filter(f=>f.id!==id));
+  showToast('🗑 Ficha eliminada');goTo('fichas');
+}
+
+function buildTxt(f){
+  const cons={good:'Bueno',regular:'Regular',bad:'Malo','':'—'};
+  return[
+    '═══════════════════════════════════════════',
+    '  FICHA ARQUEOLÓGICA DE RECOLECCIÓN SUPERFICIAL',
+    '═══════════════════════════════════════════','',
+    `  ID Ficha:       ${f.id}`,
+    `  Fecha:          ${f.fecha||'—'}`,
+    `  Campaña:        ${f.campania||'—'}`,
+    `  Proyecto:       ${f.proyecto||'—'}`,
+    `  Sitio/Hallazgo: ${f.sitio||'—'}`,
+    `  Unidad:         ${f.unidad||'—'}`,
+    '','── LOCALIZACIÓN ────────────────────────────',
+    `  Región:   ${f.region||'—'}`,
+    `  Provincia: ${f.provincia||'—'}`,
+    `  Comuna:   ${f.comuna||'—'}`,
+    '','── COORDENADAS GPS ─────────────────────────',
+    `  Latitud:   ${f.coordenadas?.lat||'—'}`,
+    `  Longitud:  ${f.coordenadas?.lng||'—'}`,
+    `  Altitud:   ${f.coordenadas?.alt||'—'} m`,
+    `  Precisión: ±${f.coordenadas?.acc||'—'} m`,
+    '','── CARACTERÍSTICAS ─────────────────────────',
+    `  Tipo sitio:     ${f.tipo||'—'}`,
+    `  Tip. funcional: ${(f.tipologiaFuncional||[]).join(', ')||'—'}`,
+    `  Período:        ${(f.periodos||[]).join(', ')||'—'}${f.periodoEspecifico?' ('+f.periodoEspecifico+')':''}`,
+    `  Tipo recolec.:  ${f.tipoRecoleccion||'—'}`,
+    '','── DIMENSIONES ─────────────────────────────',
+    `  Largo: ${f.dimensiones?.largo||'—'} m   Ancho: ${f.dimensiones?.ancho||'—'} m   Área: ${f.dimensiones?.area||'—'} m²`,
+    '','── MATERIAL ARQUEOLÓGICO ───────────────────',
+    ...(f.material||[]).map(m=>`  ${m.tipo.padEnd(16)} ${String(m.cantidad).padStart(4)} uds  ${m.descripcion||''}`),
+    '','── DIAGNÓSTICOS ────────────────────────────',
+    `  ${f.descripcionDiagnosticos||'—'}`,
+    '','── EMPLAZAMIENTO Y CONSERVACIÓN ────────────',
+    `  Emplazamiento: ${(f.emplazamiento||[]).join(', ')||'—'}${f.emplazamientoOtro?' / '+f.emplazamientoOtro:''}`,
+    `  Conservación:  ${cons[f.conservacion]||'—'}`,
+    f.descripcionConservacion?`  Descripción:   ${f.descripcionConservacion}`:'',
+    '','── RESPONSABLES ────────────────────────────',
+    `  Responsable: ${f.responsable||'—'}`,
+    `  Ayudantes:   ${f.ayudantes||'—'}`,
+    f.observaciones?`\n── OBSERVACIONES ──────────────────────────\n  ${f.observaciones}`:'',
+    `\n  Fotografías: ${(f.fotos||[]).length}`,
+    `\n  Generado: ${new Date().toLocaleString('es-CL')}`,
+    '═══════════════════════════════════════════',
+  ].join('\n');
+}
+
+function exportarTxt(){
+  const data=collectFormData();
+  if(!data.proyecto&&!data.sitio){showToast('⚠️ Complete al menos proyecto y sitio');return;}
+  const blob=new Blob([buildTxt(data)],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`${data.id}_${(data.sitio||'ficha').replace(/\s+/g,'_')}.txt`;a.click();URL.revokeObjectURL(url);
+  showToast('📤 Exportando TXT…');
+}
+function exportDetalleTxt(){
+  const f=loadFichas().find(x=>x.id===currentDetailId);if(!f)return;
+  const blob=new Blob([buildTxt(f)],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`${f.id}_${(f.sitio||'ficha').replace(/\s+/g,'_')}.txt`;a.click();URL.revokeObjectURL(url);
+  showToast('📤 Exportando…');
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+</script>
+</body>
+</html>
+<script>
+// ─── SERVICE WORKER + OFFLINE ─────────────────────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('ArqField SW activo:', reg.scope))
+      .catch(err => console.warn('SW no disponible:', err));
+  });
+}
+
+function updateOnlineStatus(){
+  const online = navigator.onLine;
+  const existing = document.getElementById('offline-bar');
+  if(!online){
+    if(!existing){
+      const bar = document.createElement('div');
+      bar.id = 'offline-bar';
+      bar.style.cssText = 'position:fixed;top:52px;left:0;right:0;background:#FF9500;color:white;text-align:center;padding:7px 16px;font-size:13px;font-weight:600;z-index:300;letter-spacing:0.2px;';
+      bar.textContent = '📡 Modo sin conexión — todo funciona igual';
+      document.body.appendChild(bar);
+      document.querySelectorAll('.nav-bar').forEach(n => n.style.top = '82px');
+    }
+  } else {
+    if(existing){
+      existing.remove();
+      document.querySelectorAll('.nav-bar').forEach(n => n.style.top = '52px');
+      showToast('✅ Conexión restaurada');
+    }
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+</script>

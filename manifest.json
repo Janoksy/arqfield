@@ -1,0 +1,27 @@
+{
+  "name": "ArqField — Fichas Arqueológicas",
+  "short_name": "ArqField",
+  "description": "App para registro de fichas arqueológicas de campo. Funciona sin conexión.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1C1C1E",
+  "theme_color": "#1C1C1E",
+  "lang": "es-CL",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%231C3A2A'/><text y='130' x='50%' font-size='110' text-anchor='middle'>🏺</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%231C3A2A'/><text y='360' x='50%' font-size='300' text-anchor='middle'>🏺</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "prefer_related_applications": false
+}
