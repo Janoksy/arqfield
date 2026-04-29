@@ -233,11 +233,31 @@ canvas#croquis{display:block;width:100%;cursor:crosshair;touch-action:none;}
       <span class="gps-status"><span class="gps-dot" id="gps-dot"></span><span id="gps-status-txt">Sin señal</span></span>
     </div>
     <div class="gps-body">
-      <div class="gps-coords">
-        <div class="gps-coord-item"><div class="gps-coord-label">Latitud</div><div class="gps-coord-value" id="coord-lat">—</div></div>
-        <div class="gps-coord-item"><div class="gps-coord-label">Longitud</div><div class="gps-coord-value" id="coord-lng">—</div></div>
-        <div class="gps-coord-item"><div class="gps-coord-label">Altitud (m)</div><div class="gps-coord-value" id="coord-alt">—</div></div>
-        <div class="gps-coord-item"><div class="gps-coord-label">Precisión (m)</div><div class="gps-coord-value" id="coord-acc">—</div></div>
+      <div class="gps-coords" style="grid-template-columns:1fr 1fr;">
+        <div class="gps-coord-item" style="grid-column:1/3">
+          <div class="gps-coord-label">Zona UTM</div>
+          <div class="gps-coord-value" id="coord-zona" style="font-size:18px;color:var(--ios-blue)">—</div>
+        </div>
+        <div class="gps-coord-item">
+          <div class="gps-coord-label">Este (m)</div>
+          <div class="gps-coord-value" id="coord-este">—</div>
+        </div>
+        <div class="gps-coord-item">
+          <div class="gps-coord-label">Norte (m)</div>
+          <div class="gps-coord-value" id="coord-norte">—</div>
+        </div>
+        <div class="gps-coord-item">
+          <div class="gps-coord-label">Altitud (m)</div>
+          <div class="gps-coord-value" id="coord-alt">—</div>
+        </div>
+        <div class="gps-coord-item">
+          <div class="gps-coord-label">Precisión (m)</div>
+          <div class="gps-coord-value" id="coord-acc">—</div>
+        </div>
+      </div>
+      <div style="background:var(--ios-gray6);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--ios-gray);font-weight:600;text-transform:uppercase;letter-spacing:0.3px">Lat/Lng WGS84</span>
+        <span style="font-size:12px;color:var(--ios-gray);font-variant-numeric:tabular-nums;" id="coord-latlng">—</span>
       </div>
       <button class="gps-btn" onclick="getLocation()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
@@ -472,6 +492,28 @@ function nextId(){
 }
 document.getElementById('ficha-id').textContent=nextId();
 
+// ─── CONVERSIÓN LAT/LNG → UTM ────────────────────────────────────
+function latLngToUTM(lat, lng) {
+  const a=6378137, f=1/298.257223563, b=a*(1-f);
+  const e2=1-(b*b)/(a*a), e=Math.sqrt(e2), ep2=e2/(1-e2);
+  const zone=Math.floor((lng+180)/6)+1;
+  const lon0=(zone-1)*6-180+3;
+  const k0=0.9996, N0=lat>=0?0:10000000;
+  const phi=lat*Math.PI/180, lam=(lng-lon0)*Math.PI/180;
+  const N=a/Math.sqrt(1-e2*Math.sin(phi)*Math.sin(phi));
+  const T=Math.tan(phi)*Math.tan(phi);
+  const C=ep2*Math.cos(phi)*Math.cos(phi);
+  const A=Math.cos(phi)*lam;
+  const M=a*((1-e2/4-3*e2*e2/64-5*e2*e2*e2/256)*phi
+    -(3*e2/8+3*e2*e2/32+45*e2*e2*e2/1024)*Math.sin(2*phi)
+    +(15*e2*e2/256+45*e2*e2*e2/1024)*Math.sin(4*phi)
+    -(35*e2*e2*e2/3072)*Math.sin(6*phi));
+  const x=k0*N*(A+(1-T+C)*A*A*A/6+(5-18*T+T*T+72*C-58*ep2)*A*A*A*A*A/120)+500000;
+  const y=k0*(M+N*Math.tan(phi)*(A*A/2+(5-T+9*C+4*C*C)*A*A*A*A/24+(61-58*T+T*T+600*C-330*ep2)*A*A*A*A*A*A/720))+N0;
+  const hemi=lat>=0?'N':'S';
+  return{zona:`${zone}${hemi}`, este:Math.round(x), norte:Math.round(y)};
+}
+
 let coordData={};
 function getLocation(){
   const dot=document.getElementById('gps-dot'),txt=document.getElementById('gps-status-txt');
@@ -479,13 +521,16 @@ function getLocation(){
   if(!navigator.geolocation){showToast('GPS no disponible');return;}
   navigator.geolocation.getCurrentPosition(pos=>{
     const{latitude:lat,longitude:lng,altitude:alt,accuracy:acc}=pos.coords;
-    document.getElementById('coord-lat').textContent=lat.toFixed(6);
-    document.getElementById('coord-lng').textContent=lng.toFixed(6);
+    const utm=latLngToUTM(lat,lng);
+    document.getElementById('coord-zona').textContent=utm.zona;
+    document.getElementById('coord-este').textContent=utm.este.toLocaleString('es-CL');
+    document.getElementById('coord-norte').textContent=utm.norte.toLocaleString('es-CL');
     document.getElementById('coord-alt').textContent=alt?alt.toFixed(1):'N/D';
     document.getElementById('coord-acc').textContent=acc?'±'+acc.toFixed(0):'—';
+    document.getElementById('coord-latlng').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
     dot.className='gps-dot active';dot.style.background='';txt.textContent='Señal activa';
-    coordData={lat:lat.toFixed(6),lng:lng.toFixed(6),alt:alt?alt.toFixed(1):null,acc:acc?acc.toFixed(0):null};
-    showToast('✓ Coordenadas capturadas');
+    coordData={lat:lat.toFixed(6),lng:lng.toFixed(6),utm_zona:utm.zona,utm_este:utm.este,utm_norte:utm.norte,alt:alt?alt.toFixed(1):null,acc:acc?acc.toFixed(0):null};
+    showToast('✓ Coordenadas UTM capturadas');
   },()=>{dot.style.background='var(--ios-red)';txt.textContent='Error GPS';showToast('No se pudo obtener ubicación');},{enableHighAccuracy:true,timeout:15000});
 }
 
@@ -616,7 +661,7 @@ function resetForm(){
   ['dim-largo','dim-ancho'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('dim-area').textContent='—';
   photos=[];renderPhotos();clearCanvas();coordData={};
-  ['coord-lat','coord-lng','coord-alt','coord-acc'].forEach(id=>document.getElementById(id).textContent='—');
+  ['coord-zona','coord-este','coord-norte','coord-alt','coord-acc'].forEach(id=>document.getElementById(id).textContent='—');document.getElementById('coord-latlng').textContent='—';
   document.getElementById('gps-dot').className='gps-dot';
   document.getElementById('gps-status-txt').textContent='Sin señal';
   document.getElementById('ficha-id').textContent=nextId();
@@ -659,7 +704,15 @@ function verDetalle(id){
   const totalPiezas=(f.material||[]).reduce((s,m)=>s+(parseInt(m.cantidad)||0),0);
   const fecha=f.fecha?new Date(f.fecha+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—';
   const matRows=(f.material||[]).map(m=>`<div class="detail-row"><span class="detail-key">${m.tipo}</span><span class="detail-val">${m.cantidad} — ${m.descripcion||'—'}</span></div>`).join('')||'<div class="detail-row"><span class="detail-key" style="color:var(--ios-gray3)">Sin material registrado</span></div>';
-  const coordHtml=f.coordenadas&&f.coordenadas.lat?`<div class="detail-coords"><div class="detail-coord-box"><div class="detail-coord-label">Latitud</div><div class="detail-coord-val">${f.coordenadas.lat}</div></div><div class="detail-coord-box"><div class="detail-coord-label">Longitud</div><div class="detail-coord-val">${f.coordenadas.lng}</div></div>${f.coordenadas.alt?`<div class="detail-coord-box"><div class="detail-coord-label">Altitud</div><div class="detail-coord-val">${f.coordenadas.alt} m</div></div>`:''} ${f.coordenadas.acc?`<div class="detail-coord-box"><div class="detail-coord-label">Precisión</div><div class="detail-coord-val">±${f.coordenadas.acc} m</div></div>`:''}</div>`:'<div class="detail-row"><span class="detail-key" style="color:var(--ios-gray3)">Sin coordenadas registradas</span></div>';
+  const c=f.coordenadas||{};
+  const coordHtml=c.utm_este?`<div class="detail-coords">
+    <div class="detail-coord-box" style="grid-column:1/3"><div class="detail-coord-label">Zona UTM</div><div class="detail-coord-val" style="color:var(--ios-blue);font-size:18px">${c.utm_zona}</div></div>
+    <div class="detail-coord-box"><div class="detail-coord-label">Este (m)</div><div class="detail-coord-val">${Number(c.utm_este).toLocaleString('es-CL')}</div></div>
+    <div class="detail-coord-box"><div class="detail-coord-label">Norte (m)</div><div class="detail-coord-val">${Number(c.utm_norte).toLocaleString('es-CL')}</div></div>
+    ${c.alt?`<div class="detail-coord-box"><div class="detail-coord-label">Altitud</div><div class="detail-coord-val">${c.alt} m</div></div>`:''}
+    ${c.acc?`<div class="detail-coord-box"><div class="detail-coord-label">Precisión</div><div class="detail-coord-val">±${c.acc} m</div></div>`:''}
+    <div class="detail-coord-box" style="grid-column:1/3"><div class="detail-coord-label">Lat/Lng WGS84</div><div class="detail-coord-val" style="font-size:12px;color:var(--ios-gray)">${c.lat}, ${c.lng}</div></div>
+  </div>`:'<div class="detail-row"><span class="detail-key" style="color:var(--ios-gray3)">Sin coordenadas registradas</span></div>';
   const fotosHtml=f.fotos&&f.fotos.length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px 0">${f.fotos.map(src=>`<div style="aspect-ratio:1;overflow:hidden"><img src="${src}" style="width:100%;height:100%;object-fit:cover"></div>`).join('')}</div>`:'<div class="detail-row"><span class="detail-key" style="color:var(--ios-gray3)">Sin fotografías</span></div>';
   document.getElementById('detail-content').innerHTML=`
     <div class="detail-section"><div class="detail-section-title">Identificación</div>
@@ -724,11 +777,13 @@ function buildTxt(f){
     `  Región:   ${f.region||'—'}`,
     `  Provincia: ${f.provincia||'—'}`,
     `  Comuna:   ${f.comuna||'—'}`,
-    '','── COORDENADAS GPS ─────────────────────────',
-    `  Latitud:   ${f.coordenadas?.lat||'—'}`,
-    `  Longitud:  ${f.coordenadas?.lng||'—'}`,
+    '','── COORDENADAS UTM ─────────────────────────',
+    `  Zona UTM:  ${f.coordenadas?.utm_zona||'—'}`,
+    `  Este:      ${f.coordenadas?.utm_este?Number(f.coordenadas.utm_este).toLocaleString('es-CL'):'—'} m`,
+    `  Norte:     ${f.coordenadas?.utm_norte?Number(f.coordenadas.utm_norte).toLocaleString('es-CL'):'—'} m`,
     `  Altitud:   ${f.coordenadas?.alt||'—'} m`,
     `  Precisión: ±${f.coordenadas?.acc||'—'} m`,
+    `  Lat/Lng:   ${f.coordenadas?.lat||'—'}, ${f.coordenadas?.lng||'—'}`,
     '','── CARACTERÍSTICAS ─────────────────────────',
     `  Tipo sitio:     ${f.tipo||'—'}`,
     `  Tip. funcional: ${(f.tipologiaFuncional||[]).join(', ')||'—'}`,
